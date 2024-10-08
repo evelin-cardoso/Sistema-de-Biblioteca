@@ -1,0 +1,59 @@
+# Sistema de Biblioteca
+
+Este projeto é um Sistema de Biblioteca desenvolvido em Python usando a biblioteca Tkinter para criar uma interface gráfica. O sistema permite registrar usuários, adicionar empréstimos de livros e gerenciar a devolução dos mesmos.
+
+## Funcionalidades
+
+- **Registrar Usuários**: Permite o registro de novos usuários com nome, telefone e e-mail.
+- **Adicionar Empréstimos**: Possibilita adicionar empréstimos de livros a usuários registrados, incluindo a data do empréstimo e a data limite para devolução.
+- **Visualizar Usuários Registrados**: Mostra todos os usuários registrados e os livros que cada um pegou emprestado.
+- **Gerenciar Devoluções**: Permite marcar livros como devolvidos e exibir a situação atual dos empréstimos.
+- **Persistência de Dados**: Os dados dos usuários registrados são salvos em um arquivo JSON para que permaneçam disponíveis entre as execuções do programa.
+
+## Tecnologias Utilizadas
+
+- **Python**: Linguagem de programação utilizada para o desenvolvimento do sistema.
+- **Tkinter**: Biblioteca padrão do Python para criação de interfaces gráficas.
+- **JSON**: Formato de arquivo utilizado para armazenar os dados dos usuários.
+
+## Pré-requisitos
+
+Antes de executar o projeto, você precisa ter o Python instalado em seu computador. Você pode baixá-lo em [python.org](https://www.python.org/).
+
+## Como Executar
+
+1. Clone este repositório:
+   ```bash
+   git clone https://github.com/seu_usuario/sistema_biblioteca.git
+   cd sistema_biblioteca
+
+
+Execute o arquivo principal:
+bash
+Copiar código
+python main.py
+Contribuição
+Contribuições são bem-vindas! Se você deseja contribuir, siga estas etapas:
+
+Fork o projeto.
+Crie uma branch para sua feature (git checkout -b minha-nova-feature).
+Faça suas alterações e commit (git commit -m 'Adiciona nova feature').
+Envie para a branch principal (git push origin minha-nova-feature).
+Crie um Pull Request.
+Licença
+Este projeto está licenciado sob a MIT License.
+
+Autor:
+Evelin
+
+### Personalizações
+- **URL do repositório**: Substitua `https://github.com/seu_usuario/sistema_biblioteca.git` pela URL real do seu repositório.
+- **Arquivo principal**: Certifique-se de que o nome do arquivo Python (`main.py`) corresponde ao que você tem no seu projeto.
+- **Licença**: Se você usar uma licença diferente, ajuste a seção correspondente.
+
+Sinta-se à vontade para modificar qualquer parte do README de acordo com suas necessidades! Se precisar de mais ajuda, é só avisar.
+
+
+
+
+

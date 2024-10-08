@@ -1,0 +1,298 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+from datetime import datetime, timedelta
+import json
+import os
+
+class BibliotecaApp:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Sistema de Biblioteca")
+        self.master.geometry("1000x600")  # Aumentando a largura
+        self.master.config(bg='#E6E6FA')  # Cor de fundo roxa clara
+
+        self.users = self.load_users()  # Carregar usuários registrados
+        self.current_user = None  # Usuário atual que está logado
+        self.loan_records = []  # Registros de empréstimos
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Frame para menu lateral
+        self.menu_frame = tk.Frame(self.master, bg='#E6E6FA')  # Cor de fundo do menu lateral
+        self.menu_frame.pack(side=tk.LEFT, fill=tk.Y)
+
+        # Adicionar opções ao menu lateral
+        self.search_label = tk.Label(self.menu_frame, text="Buscar Livro:", bg='#E6E6FA')
+        self.search_label.pack(pady=10)
+
+        self.search_entry = tk.Entry(self.menu_frame)
+        self.search_entry.pack(pady=5)
+
+        self.search_button = tk.Button(self.menu_frame, text="Pesquisar", command=self.search_book, bg='#9370DB', fg='white')  # Cor do botão
+        self.search_button.pack(pady=5)
+
+        self.add_loan_button = tk.Button(self.menu_frame, text="Adicionar Empréstimo", command=self.add_loan_window, bg='#9370DB', fg='white')
+        self.add_loan_button.pack(pady=5)
+
+        self.register_button = tk.Button(self.menu_frame, text="Registrar Usuário", command=self.register_user, bg='#9370DB', fg='white')
+        self.register_button.pack(pady=5)
+
+        # Botão para mostrar usuários registrados
+        self.show_users_button = tk.Button(self.menu_frame, text="Usuários Registrados", command=self.show_registered_users, bg='#9370DB', fg='white')
+        self.show_users_button.pack(pady=5)
+
+        # Frame para tabela de livros
+        self.table_frame = tk.Frame(self.master, bg='#E6E6FA')  # Cor de fundo da tabela
+        self.table_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20)
+
+        # Tabela de livros
+        self.tree = ttk.Treeview(self.table_frame, columns=("ID", "Título", "AutorID", "Ano", "Gênero"), show='headings')
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Título", text="Título")
+        self.tree.heading("AutorID", text="AutorID")
+        self.tree.heading("Ano", text="Ano")
+        self.tree.heading("Gênero", text="Gênero")
+
+        # Estilo da tabela
+        self.tree.pack(fill=tk.BOTH, expand=True)
+        self.style = ttk.Style()
+        self.style.configure("Treeview", rowheight=30)  # Aumenta a altura da linha
+        self.populate_table()  # Método para popular a tabela com dados iniciais
+
+        # Configurando estilo da tabela
+        self.style.configure("Treeview", background="#E0E0E0", foreground="black")
+        self.style.configure("Treeview.Heading", background="#9370DB", foreground="white")
+        self.style.map("Treeview", background=[('selected', '#6A5ACD')])  # Cor de fundo quando selecionado
+
+        # Frame para tabela de empréstimos
+        self.loan_table_frame = tk.Frame(self.master, bg='#E6E6FA')
+        self.loan_table_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20)
+
+        # Tabela de empréstimos
+        self.loan_tree = ttk.Treeview(self.loan_table_frame, columns=("Usuário", "Livro", "Data Empréstimo", "Data Limite", "Devolvido"), show='headings')
+        self.loan_tree.heading("Usuário", text="Usuário")
+        self.loan_tree.heading("Livro", text="Livro")
+        self.loan_tree.heading("Data Empréstimo", text="Data Empréstimo")
+        self.loan_tree.heading("Data Limite", text="Data Limite")
+        self.loan_tree.heading("Devolvido", text="Devolvido")
+
+        # Estilo da tabela de empréstimos
+        self.loan_tree.pack(fill=tk.BOTH, expand=True)
+        self.loan_style = ttk.Style()
+        self.loan_style.configure("Treeview", rowheight=30)  # Aumenta a altura da linha
+
+        # Configurando estilo da tabela de empréstimos
+        self.loan_style.configure("Treeview", background="#E0E0E0", foreground="black")
+        self.loan_style.configure("Treeview.Heading", background="#9370DB", foreground="white")
+        self.loan_style.map("Treeview", background=[('selected', '#6A5ACD')])  # Cor de fundo quando selecionado
+
+    def populate_table(self):
+        # Exemplo de dados para a tabela de livros
+        livros = [
+            (1, "Harry Potter e a Pedra Filosofal", 1, 1997, "Fantasía"),
+            (2, "Harry Potter e a Câmara Secreta", 1, 1998, "Fantasía"),
+            (3, "A Game of Thrones", 2, 1996, "Fantasía"),
+            (4, "O Hobbit", 3, 1937, "Fantasía"),
+            (5, "O Senhor dos Anéis", 4, 1954, "Fantasía"),
+            (6, "Assassinato no Expresso do Oriente", 4, 1934, "Mistério"),
+            (7, "E Não Sobrou Nenhum", 4, 1939, "Mistério"),
+            (8, "It - A Coisa", 5, 1986, "Terror"),
+        ]
+        for livro in livros:
+            self.tree.insert("", "end", values=livro)
+
+    def search_book(self):
+        # Função para pesquisar livro
+        query = self.search_entry.get()
+        for item in self.tree.get_children():
+            if query.lower() in self.tree.item(item)["values"][1].lower():
+                self.tree.selection_set(item)  # Seleciona o livro encontrado
+                return
+        messagebox.showinfo("Resultado", "Livro não encontrado.")
+
+    def add_loan_window(self):
+        # Janela para adicionar empréstimo
+        if not self.users:
+            messagebox.showwarning("Aviso", "Nenhum usuário registrado. Registre um usuário primeiro.")
+            return
+
+        loan_window = tk.Toplevel(self.master)
+        loan_window.title("Adicionar Empréstimo")
+        loan_window.geometry("400x300")
+        loan_window.config(bg='#E6E6FA')
+
+        # Seleção de usuário
+        tk.Label(loan_window, text="Selecionar Usuário:", bg='#E6E6FA').pack(pady=5)
+        self.user_combo = ttk.Combobox(loan_window, values=[user['nome'] for user in self.users])
+        self.user_combo.pack(pady=5)
+
+        # Seleção de livro
+        tk.Label(loan_window, text="Selecionar Livro:", bg='#E6E6FA').pack(pady=5)
+        self.book_combo = ttk.Combobox(loan_window, values=[f"{self.tree.item(livro)['values'][1]} (ID: {self.tree.item(livro)['values'][0]})" for livro in self.tree.get_children()])
+        self.book_combo.pack(pady=5)
+
+        # Data do Empréstimo
+        tk.Label(loan_window, text="Data do Empréstimo:", bg='#E6E6FA').pack(pady=5)
+        self.loan_date = tk.Entry(loan_window)
+        self.loan_date.pack(pady=5)
+        self.loan_date.insert(0, datetime.now().strftime("%Y-%m-%d"))  # Preenche com a data atual
+
+        # Data Limite para Devolução
+        tk.Label(loan_window, text="Data Limite:", bg='#E6E6FA').pack(pady=5)
+        self.due_date = tk.Entry(loan_window)
+        self.due_date.pack(pady=5)
+        self.due_date.insert(0, (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"))  # 7 dias a partir de hoje
+
+        # Botão para adicionar empréstimo
+        tk.Button(loan_window, text="Adicionar Empréstimo", command=self.add_loan, bg='#9370DB', fg='white').pack(pady=10)
+
+    def add_loan(self):
+        user_name = self.user_combo.get()
+        selected_book = self.book_combo.get()
+        loan_date = self.loan_date.get()
+        due_date = self.due_date.get()
+
+        if not user_name or not selected_book or not loan_date or not due_date:
+            messagebox.showwarning("Aviso", "Preencha todos os campos.")
+            return
+
+        # Extraindo o ID do livro selecionado
+        book_id = selected_book.split(" (ID: ")[-1][:-1]  # Extrai o ID do livro
+
+        # Adicionando o empréstimo aos registros
+        self.loan_records.append({
+            'usuario': user_name,
+            'livro': selected_book,
+            'data_emprestimo': loan_date,
+            'data_limite': due_date,
+            'devolvido': False  # Novo campo para indicar se o livro foi devolvido
+        })
+
+        messagebox.showinfo("Sucesso", "Empréstimo adicionado com sucesso!")
+        self.loan_tree.insert("", "end", values=(user_name, selected_book, loan_date, due_date, "Não"))
+
+    def register_user(self):
+        register_window = tk.Toplevel(self.master)
+        register_window.title("Registrar Usuário")
+        register_window.geometry("400x300")
+        register_window.config(bg='#E6E6FA')
+
+        tk.Label(register_window, text="Nome:", bg='#E6E6FA').pack(pady=5)
+        nome_entry = tk.Entry(register_window)
+        nome_entry.pack(pady=5)
+
+        tk.Label(register_window, text="Telefone:", bg='#E6E6FA').pack(pady=5)
+        telefone_entry = tk.Entry(register_window)
+        telefone_entry.pack(pady=5)
+
+        tk.Label(register_window, text="E-mail:", bg='#E6E6FA').pack(pady=5)
+        email_entry = tk.Entry(register_window)
+        email_entry.pack(pady=5)
+
+        def submit_registration():
+            nome = nome_entry.get()
+            telefone = telefone_entry.get()
+            email = email_entry.get()
+
+            if not nome or not telefone or not email:
+                messagebox.showwarning("Aviso", "Preencha todos os campos.")
+                return
+
+            self.users.append({'nome': nome, 'telefone': telefone, 'email': email})
+            self.save_users()  # Salva os usuários registrados
+            messagebox.showinfo("Sucesso", "Usuário registrado com sucesso!")
+            register_window.destroy()
+
+        tk.Button(register_window, text="Registrar", command=submit_registration, bg='#9370DB', fg='white').pack(pady=10)
+
+    def show_registered_users(self):
+        users_window = tk.Toplevel(self.master)
+        users_window.title("Usuários Registrados")
+        users_window.geometry("600x400")
+        users_window.config(bg='#E6E6FA')
+
+        # Tabela para mostrar usuários
+        user_tree = ttk.Treeview(users_window, columns=("Nome", "Telefone", "E-mail", "Livros Emprestados"), show='headings')
+        user_tree.heading("Nome", text="Nome")
+        user_tree.heading("Telefone", text="Telefone")
+        user_tree.heading("E-mail", text="E-mail")
+        user_tree.heading("Livros Emprestados", text="Livros Emprestados")
+
+        user_tree.pack(fill=tk.BOTH, expand=True)
+
+        for user in self.users:
+            livros_emprestados = ', '.join([record['livro'] for record in self.loan_records if record['usuario'] == user['nome']])
+            user_tree.insert("", "end", values=(user['nome'], user['telefone'], user['email'], livros_emprestados))
+
+            # Adicionando botão para marcar como devolvido
+            user_tree.bind("<Double-1>", lambda event, user=user: self.view_user_loans(user))
+
+    def view_user_loans(self, user):
+        loans_window = tk.Toplevel(self.master)
+        loans_window.title(f"Empréstimos de {user['nome']}")
+        loans_window.geometry("400x300")
+        loans_window.config(bg='#E6E6FA')
+
+        user_loans_tree = ttk.Treeview(loans_window, columns=("Livro", "Data Empréstimo", "Data Limite", "Devolvido"), show='headings')
+        user_loans_tree.heading("Livro", text="Livro")
+        user_loans_tree.heading("Data Empréstimo", text="Data Empréstimo")
+        user_loans_tree.heading("Data Limite", text="Data Limite")
+        user_loans_tree.heading("Devolvido", text="Devolvido")
+
+        user_loans_tree.pack(fill=tk.BOTH, expand=True)
+
+        for record in self.loan_records:
+            if record['usuario'] == user['nome']:
+                user_loans_tree.insert("", "end", values=(
+                    record['livro'],
+                    record['data_emprestimo'],
+                    record['data_limite'],
+                    "Sim" if record['devolvido'] else "Não"
+                ))
+
+        # Botão para marcar como devolvido
+        tk.Button(loans_window, text="Marcar como Devolvido", command=lambda: self.mark_as_returned(user['nome']), bg='#9370DB', fg='white').pack(pady=10)
+
+    def mark_as_returned(self, user_name):
+        selected_item = self.loan_tree.selection()
+        if not selected_item:
+            messagebox.showwarning("Aviso", "Selecione um empréstimo para marcar como devolvido.")
+            return
+
+        item_values = self.loan_tree.item(selected_item)['values']
+        livro = item_values[1]
+        
+        # Marcar o livro como devolvido
+        for record in self.loan_records:
+            if record['usuario'] == user_name and record['livro'] == livro:
+                record['devolvido'] = True
+                messagebox.showinfo("Sucesso", "Livro marcado como devolvido com sucesso!")
+                self.refresh_loan_table()
+                return
+        
+        messagebox.showwarning("Aviso", "Empréstimo não encontrado.")
+
+    def refresh_loan_table(self):
+        # Limpa a tabela de empréstimos e repopula
+        for item in self.loan_tree.get_children():
+            self.loan_tree.delete(item)
+
+        for record in self.loan_records:
+            devolvido = "Sim" if record['devolvido'] else "Não"
+            self.loan_tree.insert("", "end", values=(record['usuario'], record['livro'], record['data_emprestimo'], record['data_limite'], devolvido))
+
+    def load_users(self):
+        if os.path.exists("usuarios.json"):
+            with open("usuarios.json", "r") as file:
+                return json.load(file)
+        return []
+
+    def save_users(self):
+        with open("usuarios.json", "w") as file:
+            json.dump(self.users, file)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = BibliotecaApp(root)
+    root.mainloop()
